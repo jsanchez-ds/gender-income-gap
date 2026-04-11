@@ -1,0 +1,938 @@
+---
+title: "Gender Income Gap in Small Commerce"
+author: "Jonathan Sánchez"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    df_print: paged
+    theme: simplex
+    highlight: tango
+    toc: no
+  pdf_document:
+    toc: no
+encoding: UTF-8
+---
+
+<!-- 
+Author  	  : Marcel Goic
+Description	: Brecha de Genero en Ingresos de Ventas
+Notes       : 
+-->
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<p align="right"><b>Curso:</b> Ingeniería de Marketing, Marcel Goic</p>
+<p align="right"><b>Equipo Docente:</b> Joaquín Cisternas, Ignacio Hernández, Andrés Olivares, Agustín Hilcker</p>
+
+# {.tabset}
+
+## Enunciado
+
+Las inequidades de género se manifiestan en disitintas áreas de la economía y existe evidencia que apunta a que [el ingreso de los hombres es mayor que el de las mujeres en casi todo el mundo](https://ourworldindata.org/economic-inequality-by-gender/#in-most-countries-there-is-a-substantial-gender-pay-gap). En objetivo de esta tarea es entender si esta brecha se presenta en pequeños comercios, dónde la literatura sugiere [la participación de mujeres ha crecido significativamente en las últimas décadas](https://www.tandfonline.com/doi/full/10.1111/j.1540-627X.2007.00214.x)  
+
+
+Para estudiar las brechas de género, usaremos los datos de una plataforma de pagos digitales con amplia cobertura en pequeños comercios. La plataforma registra todos los pagos digitales de una muestra de 5 mil comercios en una región en Latinoamericano que no podemos revelar. Los pagos digitales se realizan en un dispositivo de cobro que procesa la información de las tarjetas de crédito y/o débito de los clientes de los comercios y administra el pago digitalmente. Para usar el servicio, los comercios deben comprar el dispositivo que procesa los pagos el que queda registrado a cargo de un o una responsable comercial sobre quién se conoce el domicilio y el género. Como la muestra corresponde a comercios que en general tienen baja facturación, es razonable asumir que quién registra el dispositivo es quién en general opera el negocio, lo que nos posibilita estudiar brechas de ingreso. 
+
+La base de datos que hemos recopilado para estudiar las brechas de género contiene una caracterización del comercio, y variables de actividad econoómica semanal como ingresos, numero de transacciones y horas trabajadas: 
+
+* **idm**: Número del vendedor(a)
+* **zona**: String con id de la zona. 
+* **semana**: Corresponde a la semana del año del registro.
+* **Año**: Corresponde al año del registro.
+* **semana_Año**: String que une las columnas semana y año (formato: semana-Año)
+* **edad**: Edad del vendedor(a).
+* **genero**: Toma el valor 1 si es mujer y 0 si es hombre.
+* **ingreso**: Ingresos percibidos por el vendedor(a) i en la semana w del año y.
+* **dias_trabajados**: Días trabajados por el vendedor(a) i en la semana w del año y.
+* **antiguedad**: Antigüedad (en años) del vendedor i utilizando SumUp.
+* **rubro**: Rubro del negocio del vendedor i.
+* **transacciones**: Cantidad de transacciones que hizo el vendedor(a) i en la semana w del año y.
+* **hrs_trabajados**: Horas trabajadas por el vendedor(a) i en la semana w del año y.
+* **cuarentena1**: 1 si hubo cuarentena algún dia activo del vendedor(a) i en la semana w del año y, 0 si no.
+* **hrs_diarias**: Horas diarias promedio trabajadas en los días que el vendedor(a) i trabajó en la semana w del año y.
+* **transacciones_hr**: Promedio de transacciones por hora realizadas por el vendedor(a) i en la semana w del año y.
+* **ingreso_hr**: Ingresos por hora promedio percibidos por el vendedor(a) i en la semana w del año y.
+
+A partir surgen una serie de preguntas de investigación interesantes. ¿Existe una brecha de ingresos para este segmento de comerciantes? De existir, ¿cuál es su magnitud y qué tanta dispersión existe? ¿Es homogénea entre rubros y zonas? ¿Qué podría explicar esta potente diferencia en los ingresos? 
+
+#### **Reglas del juego** 
+
+* Las tareas buscan replicar parcialmente las labores a las que se enfrentarían en el análisis de datos para el apoyo en la toma de decisiones, ya sea para una organización o para la definición de políticas. Por esto, se han propuesto preguntas relativamente abiertas que requieren que ustedes discutan y decidan cuál es el mejor enfoque de solución. Les pedimos que se involucren tempranamente en el desarrollo de la tarea para tener una discusión enriquecedora.
+
+* Todas las dudas, comentarios y errores publicarlos **exclusivamente** en el foro de u-cursos. De esta forma todos se benefician de las respuestas ofrecidas.
+
+* Consideramos que es muy importante que logren escribir un informe conciso con una redacción acorde de un informe técnico profesional. La presentación y comunicación de resultados es parte integral de la tarea y, por tanto, será evaluada cuidadosamente.
+
+* La tarea se desarrolla en grupos de máximo 3 integrantes. El entregable principal es un único markdown separado en tabs (a través de la opción .tabset). En un primer tab incluya todo el desarrollo de la tarea adecuadamente comentado. El segundo tab incluya el resumen de sus resultados de acuerdo a lo pedido en la pregunta 6. Este segundo tab es el que usarán en caso de que les corresponda presentar sus resultados. Considere también un tab con todos los procedimientos preliminares y otro para los anexos dónde puede incluir cualquier resultado complementario. 
+
+* Para entregar sus resultados suba, vía u-cursos, un único archivo comprimido llamado t1-A1-A2-A3.zip, donde A1, A2 y A3 es el primer apellido de los integrantes del grupo. Incluya también los nombres de los integrantes en el documento mismo. Incluya en el zip tanto el archivo .html de salida del markdown como los códigos fuentes que permitan reproducir sus resultados.
+
+* Para la pregunta final consideramos que 4 figuras son suficientes para resumir los aprendizajes más relevantes, pero si están convencidos de que agregar una figura adicional es absolutamente necesaria, ¡Adelante!
+
+* La fecha de entrega de la tarea es el jueves 7 de septiembre a las 23:59, sin excepciones y no habrá plazo extra para la entrega. Si por algún motivo de fuerza mayor se ve imposibilitado de entregar la tarea en el plazo estipulado, deberá escribir directamente al profesor explicando su situación. El profesor decidirá el curso de acción de acuerdo a los méritos del caso. Como siempre, es mejor dar cuenta de cualquier problema con la mayor anticipación posible. 
+
+* Recuerde que tenemos dos instancias de retroalimentación asociadas a la tarea:
+
+  1. La sesión, a realizarse el día <span style="color: navy">viernes 1 de septiembre</span>, está destinada para que expongan sus avances y dificultades y podamos discutir colectivamente cuáles son causes de acción razonables para resolver los problemas. A esta fecha se espera que los grupos al menos hayan explorado los datos y estimado algunos modelos preliminares. 
+  2. La sesión, a realizarse el día <span style="color: navy">viernes 8 de septiembre</span>, está destinada a que expongan los resultados más relevantes de su trabajo y resuman sus principales aprendizajes. Esta instancia busca simular una presentación final contra una contraparte interesada, como a las que se enfrentarán frecuentemente en su vida profesional. 
+  
+Aunque me gustaría que todos pudieran presentar, no tenemos tiempo para aquello por lo solo  seleccionaremos a aquellos que encuentren valor en esta instacia de aprendizaje. Las presentaciones tendrán una duración aproximada de 10 minutos y no es necesario que preparen material adicional. La salida del markdown debe ser lo suficientemente explicativa para comunicar sus resultados. 
+
+- A raíz de la opinión de los estudiantes, vamos a implementar una co-evaluación para que los estudiantes puedan valorar la participación de los compañeros y compañeras de grupo. Para calcular la nota final del alumno $j$ ponderaremos la nota grupal por $\max \left\{ \frac{J \cdot prom_j}{\sum_{k=1}^J prom_k} , 0.75 \right\}$, donde $prom_k$ corresponde al promedio de las co-evaluaciones recibidas por el estudiante $k$ dentro del grupo de $J$ integrantes.  
+
+- El equipo docente considera que la copia de tareas atenta en contra de tu aprendizaje y por tanto aplicará todas las medidas que estén a su disposición para desincentivar esta mala práctica.
+
+## Preliminares
+
+Escriba acá todos los comandos que necesita ejecutar antes de abordar las preguntas de la tarea (carga de librerías, lectura de datos, limpieza de la data, transformación de variables y todo lo que necesite).
+
+#### Preparación Tarea
+
+Preliminares
+
+```{r P}
+#Preliminares 
+
+rm(list=ls())         # Limpia la lista de objetos 
+graphics.off()        # Limpia la lista de gráficos
+options(digits = 5)   # Número de dígitos a utilizar
+```
+
+```{r warning=FALSE}
+#cargamos las librerias necesarias
+library(readr)      #Para leer el .csv
+library(glmnet)     #Ajusta modelo lineal
+library(ggplot2)    #Para realización de gráficos
+library(ggcorrplot) #Para realizar grafico correlacion
+library(fixest)     #Para correr modelos con efectos fijos
+library(tidyverse)  #Funcionalidades para manipular y desplegar datos
+library(kableExtra)   # Para formatear tablas
+library(modelsummary) # Para resumir resultados del modelo
+library(caret)          # for most ML models
+library(earth)          # for MARS
+library(randomForest)# for random Forest.
+```
+
+Lectura base de datos
+```{r}
+df <- read.csv("mersample.csv", sep = ";", encoding = "UTF-8")
+```
+Verificación missing values
+```{r}
+colSums(is.na(df)) > 0
+```
+Se denota que no hay missing values en la data, por lo que se puede comenzar a trabajar.
+
+Preprocesamiento y limpieza de base de datos
+
+```{r}
+#Reemplazamos comas por puntos y se convierten en carácter númerico
+df$ingreso_hr <- as.numeric(gsub(",", ".", df$ingreso_hr))
+df$transacciones_hr <- as.numeric(gsub(",", ".", df$transacciones_hr))
+df$hrs_diarias <- as.numeric(gsub(",", ".", df$hrs_diarias))
+df$semana <- as.factor(df$semana)
+
+#Eliminamos columnas que no serán de utilidad para el análisis, ya que no aportan información importante en el caso de idm, y en el caso de semana_año por que esa info está en otras variables
+df <- subset(df, select = -idm)
+df <- subset(df, select = -semana_año)
+
+#Sacamos del df las filas con el error de tener 8 días a la semana trabajados
+df <- df[df$dias_trabajados != 8, ]
+
+# Crear intervalos de edades, que nos servirá para graficar y en distintos análisis
+df$edades_intervalos <- cut(df$edad, breaks = c(17, 30, 40, 50, 60, 69, Inf),
+                          labels = c("18-30", "31-40", "41-50", "51-60", "61-70", "71+"))
+
+#Creamos Log Ingreso para facilitar el análisis de la variable ingreso como variable dependiente de los modelos
+df$logingreso <- log(df$ingreso)
+
+#Para crear un análisis con menor ruido, eliminaremos de la base las filas con ingresos muy extremos, definiendo una ventana entre los 1.800 y 7.000.000 semanales.
+df <- subset(df, ingreso >= 1800 &ingreso <= 7000000)
+
+
+# Creamos variables dummy a partir de la columna rubro, que nos serán de utilidad para utlizar en los modelos
+dummies <- model.matrix(~ rubro - 1, data = df)
+
+
+# Cambiamos los nombres de las columnas de las variables dummy
+colnames(dummies) <- c("r_alim", "r_co", "r_ofi", "r_ret", "r_vest")  # Reemplaza con los nombres deseados
+
+# Agregamos las variables dummy al data frame original
+df <- cbind(df, dummies)
+
+#Se borra una de las dummies para que no exista colinealidad y tenagamos el caso base
+df <- subset(df, select = -r_ofi)
+```
+
+
+## Desarrollo
+
+Documente acá el desarrollo de su tarea por pregunta.
+
+#### Pregunta 1
+
+(1.0 puntos) Explore los datos para entender como se comportan los ingresos de acuerdo al género del comerciante y liste al menos 3 variables que podrían influir en la brecha de ingresos. Justifique la elección de estas variables en base a los resultados del ejericio de exploración de datos.
+
+##### EDA
+Se explorará la data con el objetivo y foco en presentar cómo se comportan las variables que serán de utilidad para explicar cómo varía el ingreso entre los y las comerciantes.
+
+```{r P1}
+#Se realiza un summary para obtener estadísticas generales de las variables en la base de datos, teniendo así una exploración inicial del comportamiento de estas.
+summary(df)
+```
+
+Teniendo clara la naturaleza de cada variable, se obtiene que la medición de data se realiza a comerciantes entre los 18 y los 80 años, con el promedio en los 44.9 años. Los ingresos semanales promedian los 278.733.
+
+Para caracterizar aún más a los comerciantes, se realizarán ciertos conteos.
+
+```{r}
+# contamos la cantidad de cada género y luego los metemos a un dataframe
+conteo_genero <- table(df$genero)
+
+datos_genero <- data.frame(Genero = factor(names(conteo_genero), labels = c("Hombre", "Mujer")), Cantidad = as.vector(conteo_genero))
+
+# Creamos gráfico de torta
+ggplot(datos_genero, aes(x = "", y = Cantidad, fill = Genero, label = Cantidad)) +
+  geom_bar(stat = "identity", width = 1) +
+  geom_text(aes(label = Cantidad), position = position_stack(vjust = 0.5), color = "white", size = 5) +  
+  coord_polar(theta = "y") +  # Convertir el gráfico en uno de torta
+  labs(title = "Distribución de género") +
+  scale_fill_manual(values = c("Hombre" = "blue", "Mujer" = "pink")) + 
+  theme_void()  
+```
+```{r}
+# Repetimos procedimiento para visualizar la cantidad por cada intervalo de edad
+tabla_genero_edad <- table(df$edades_intervalos, df$genero)
+df_tabla <- as.data.frame(tabla_genero_edad)
+colnames(df_tabla) <- c("edades_intervalos", "genero", "cantidad")
+
+# creamos el gráfico
+ggplot(df_tabla, aes(x = edades_intervalos, y = cantidad, fill = factor(genero))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = cantidad), position = position_dodge(width = 0.9), vjust = -0.5) +
+  labs(title = "Distribución de género por intervalo de edad",
+       x = "Intervalo de Edad",
+       y = "Cantidad de Personas") +
+  scale_fill_manual(values = c("0" = "blue", "1" = "pink"),
+                    breaks = c("0", "1"),
+                    labels = c("Hombre", "Mujer")) +
+  theme_minimal()
+
+
+
+```
+
+```{r}
+#Se hace lo mismo para verlo por rubro
+tabla_rubro_genero <- table(df$rubro, df$genero)
+
+df_tabla2 <- as.data.frame(tabla_rubro_genero)
+
+colnames(df_tabla2) <- c("rubro", "genero", "cantidad")
+#se crea el gráfico
+ggplot(df_tabla2, aes(x = rubro, y = cantidad, fill = factor(genero))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = cantidad), position = position_dodge(width = 0.9), vjust = -0.5) +
+  labs(title = "Distribución de género por rubro",
+       x = "Rubro",
+       y = "Cantidad de Personas") +
+  scale_fill_manual(values = c("0" = "blue", "1" = "pink"),
+                    breaks = c("0", "1"),
+                    labels = c("Hombre", "Mujer")) +
+  theme_minimal()
+```
+
+En primer lugar, vale la pena notar que de las 245.857 personas, el 58.7% corresponde a mujeres. En cuanto a la composición etaria, a excepción del intervalo de 71 años o más, las mujeres predominan en cantidad en cada uno de ellos. El grueso de la data se encuentra entre los 30 y 60 años, siendo el intervalo entre los 31 y 40 años el que mayor cantidad de personas tiene. 
+
+Por último, la cantidad de datos que se tiene en cada rubro está desbalanceado. El comercio de Alimentos y Abarrotes predomina por mucho,luego lo sigue el del Retail y se destaca que para Vestuario, la cantidad de datos que se tienen es muy pequeña en relación a los demás rubros, además sucede algo particular como es que la cantidad de mujeres en este triplica a la cantidad de hombres.
+
+
+Matriz de correlación
+
+Se realiza esta matriz para observar como correlacionan las variables
+
+```{r}
+
+# creamos gráfico de matriz de correlación
+columnas_numericas <- df[, sapply(df, is.numeric)]
+matriz_correlacion <- cor(columnas_numericas)
+
+ggcorrplot(matriz_correlacion, type = "lower", lab = TRUE, lab_size = 2)
+```
+
+Se observa que hay variables de las que se esperaba que tuviesen una gran correlación positiva entre sí, como por ejemplo transacciones semanales con transacciones por hora y  horas trabajadas a la semana con horas trabajadas por día. Por otro lado, se destacan las variables que tienen gran correlación con el ingreso, ya que pueden servir como un proxy para explicar por qué varían y su aporte a la brecha de género. Estas variables son el número de transacciones (semanales y por hora), y las horas trabajadas (por semana y por día).
+
+Se realiza un gráfico de densidad de los ingresos tanto para hombres como para mujeres.
+
+```{r}
+# creamos media  para incluirla en la gráfica
+media_hombres <- mean(df$logingreso[df$genero == 0], na.rm = TRUE)
+media_mujeres <- mean(df$logingreso[df$genero == 1], na.rm = TRUE)
+
+#se crea la gráfica
+ggplot(df, aes(x = logingreso, fill = factor(genero))) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Densidad de distribución de los ingresos(log) por género",x = "Log(Ingresos)", y = "Densidad") +
+  scale_fill_discrete(name = "Género", labels = c("Hombre" , "Mujer" )) +
+  theme_minimal() +
+  theme(legend.position = "top") +
+  geom_vline(xintercept = media_hombres, color = "red", linetype = "dashed", size = 1) +
+  geom_vline(xintercept = media_mujeres, color = "blue", linetype = "dashed", size = 1)
+```
+
+Este gráfico permite observar la brecha de género sobre los ingresos a grandes rasgos. Se observa que la curva de distribución de ingresos de los hombres está corrida a la derecha en relación a la de las mujeres, al igual que la media de la distribución representada por la línea punteada en color rojo.
+
+
+Se verán los ingresos promedio por cada rango de edad y por ambos géneros, para verificar su comportamiento y estudiar el aporte que puede significar esta variable a la brecha de género.
+
+```{r}
+# Se crea el gráfico señalado
+ggplot(df, aes(x = edades_intervalos, y = ingreso, fill = factor(genero))) +
+  geom_bar(stat = "summary", fun = "mean", position = "dodge") +
+  labs(title = "Ingreso promedio por intervalo de edad por género",x = "Rango de Edad", y = "Ingresos promedio") +
+  scale_fill_manual(values = c("0" = "blue", "1" = "pink"),
+                    breaks = c("0", "1"),
+                    labels = c("Hombre", "Mujer")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(labels = scales::comma_format(scale = 1))
+```
+
+Esta grafica es interesante para notar que la edad podría ser una variable interesante para explicar la diferencia en los ingresos entre géneros. Por un lado, es claro que la edad parece importar más para los hombres a la hora de explicar los ingresos, esto porque las variaciones entre intrevalos de edad es considerable. Los hombres presentan una alza en su ingreso promedio hasta el rango de los 41-50 en donde supera los 300.000 semanal, para luego bajar consecutivamente hasta los 71 o más años. Por otro lado, el rango de ingreso promedio de las mujeres se mantiene relativamente constante a lo largo de los intervalos de edad. Con esto, se puede observar que entre los intervalos, la brecha de género en los ingresos no es la misma, por lo que controlar por esta variable puede ser interesante para explicar el por qué.
+
+
+De manera similar a lo realizado con los rangos de edad, se verificará el ingreso promedio por cada rubro para ver examinar si vale la pena considerar el trabajo como una fuente inherente de esta brecha de género.
+
+```{r}
+#Se crea el gráfico 
+ggplot(df, aes(x = rubro, y = ingreso, fill = factor(genero))) +
+  geom_bar(stat = "summary", fun = "mean", position = "dodge") +
+  labs(title = "Ingreso promedio por rubro para cada género",x = "Rubro", y = "Ingresos promedio") +
+  scale_fill_manual(values = c("0" = "blue", "1" = "pink"),
+                    breaks = c("0", "1"),
+                    labels = c("Hombre", "Mujer")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(labels = scales::comma_format(scale = 1))
+```
+
+Para analizar cómo el rubro puede contribuir en la brecha de género, en primer lugar, se nota que en todos los rubros el ingreso promedio de los hombres es mayor al de las mujeres. Por ejemplo, en vestuario se acentúa la brecha, mientras que en oficios y otros servicios es la más moderada. De esta forma, se concluye que el rubro puede ser un factor para explicar la diferencia de ingresos entre geéneros, ya que la cuantía de la brecha no es independiente a dónde se trabaje.
+
+
+Se verificará como se comportan los ingresos promedios en ambos géneros por intervalos de horas trabajadas a la semana, mediante un gráfico de cajas.
+
+```{r}
+#Se crean los intervalos de horas trabajadas para visualizar lo señalado
+df$hrs_intervalo <- cut(df$hrs_trabajadas, breaks = c(0, 20, 40, 60, Inf), labels = c("0-20", "21-40", "41-60", "61+"))
+
+#se crea este gráfico
+ggplot(df, aes(x = hrs_intervalo, y = logingreso, fill = factor(genero))) + geom_boxplot() +
+  scale_fill_manual(values = c("0" = "blue", "1" = "pink"),
+                    breaks = c("0", "1"),
+                    labels = c("Hombre", "Mujer"))+
+  labs(title = "Ingreso promedio (log) por intervalo de horas trabajadas por género",x = "Horas Trabajadas", y = "Ingreso Promedio(log)", fill = "Género") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+En este gráfico, es  interesante notar que a medida que aumentan las horas trabajadas en la semana, también lo hacen los ingresos promedios. Por otro lado, en relación a la brecha de ingresos, nuevamente se ve que la media de ingresos de los hombres se ubica por arriba que la de las mujeres. Sin embargo, a lo largo de los intervalos de horas trabajadas, la brecha de ingresos parece mantenerse más o menos constante, por lo que no se puede asegurar de que esta variable influya por sí sola para explicar por qué los hombres generan mayores ingresos que las mujeres.
+
+
+Por otro lado, vale la pena verificar la relación entre las horas trabajadas y el ingreso por hora promedio, para tener un proxy de productividad para cada género.
+
+```{r message=FALSE, warning=FALSE}
+# Se colapsa la base para tener un promedio de ingreso por horas trabajadas y género
+ingreso_hr_promedio_por_horas <- df %>%
+  group_by(hrs_trabajadas, genero) %>%
+  summarize(ingreso_hr_promedio = mean(ingreso_hr))
+
+# Se crea el gráfico
+ggplot(ingreso_hr_promedio_por_horas, aes(x = hrs_trabajadas, y = ingreso_hr_promedio, color = factor(genero))) +
+  geom_point(size = 1, alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Ingreso/hora por horas trabajadas",
+       x = "Horas Trabajadas",
+       y = "Ingreso/Hora Promedio") +
+  scale_color_manual(values = c("0" = "blue", "1" = "pink"),
+                    breaks = c("0", "1"),
+                    labels = c("Hombre", "Mujer")) +
+  theme_minimal()
+```
+
+Se concluye que a una misma cantidad de horas trabajadas, las mujeres generan menos ingresos por hora en promedio. Esto puede indicar que las mujeres tienen horas laborales menos productivas, esto es, deben dedicar más horas al trabajo que los hombres para obtener un mismo ingreso semanal dado. Ciertas hipótesis se pueden formular para explicar esto, por lo que discutirlo más a detalle puede ser de interés.
+
+Otra variable que es candidata a estudiar es la de zona. Una variable territorial tiene mucho sentido a la hora de evaluar diferencias en ingresos por lo que se estudiará si puede además generar algún efecto sobre el género. Como la base tiene muchas zonas, por un tema visual y de orden,se mostrarán solo algunas para ilustrar el punto a discutir posteriormente.
+
+```{r message=FALSE, warning=FALSE}
+# Se saca la muestra de zonas a visualizar y se agrupan en un data frama
+zonas_interes <- c("zona 1", "zona 8", "zona 15", "zona 20", "zona 33", "zona 40", "zona 45", "zona 49", "zona 52")
+df_zona <- df[df$zona %in% zonas_interes, ]
+
+# Se colapsa la base para sacar los promedios de ingreso por zona y genero
+ingresos_promedio_zona <- df_zona %>%
+  group_by(zona, genero) %>%
+  summarize(ingreso_promedio = mean(ingreso))
+
+
+# Se crea el gráfico
+ggplot(ingresos_promedio_zona, aes(x = factor(genero), y = ingreso_promedio, fill = factor(genero))) +
+  geom_bar(stat = "identity") +
+  labs(title = "Ingresos promedio por género en distintas zonas",
+       x = "Género",
+       y = "Ingreso Promedio") +
+  scale_fill_manual(values = c("0" = "blue", "1" = "pink"),
+                    breaks = c("0", "1"),
+                    labels = c("Hombre", "Mujer")) +
+  facet_wrap(~zona) +
+  scale_y_continuous(labels = scales::comma_format(scale = 1))+
+  theme_minimal()
+
+```
+
+Salta a la vista que la zona no es una variable indiferente a la hora de mostrar diferencias en ingresos. Por un lado, la zona puede explicar diferencias de ingreso en general, esto es, hay zonas en donde los ingresos promedios semanales superan por mucho a otras. Por otro lado, es importante notar que entre zonas, la brecha varía, de modo que para describir la brecha entre géneros, esta variable puede ser interesante ya que, por ejemplo, la brecha de ingresos en zonas como la 1 y la 52 es muy grande en comparación a otras zonas donde los ingresos pueden verse más parejos. En conclusión, es interesante anotar a esta variable como una a estudiar. En particular, se pueden elaborar suposiciones como que hay mediciones de zona más acaudaladas que otras, o zonas con mayor movimiento económico que otras, como lo puede ser el comparar una zona rural v/s una urbana, por lo que puede tener cierto sentido capturar el efecto fijo que signfica laburar en una zona u otra.
+
+
+Para averiguar si hay alguna estacionalidad dentro de las semanas del año, se elabora el gráfico para ver la evolución de los ingresos promedios a lo largo de las semanas.
+
+```{r}
+#Se colapsa la base originial para sacar promedio de ingreso por cada semana y genero
+promedios_semana_genero <- df %>%
+  group_by(semana, genero) %>%
+  summarize(ingreso_promedio = mean(ingreso))
+
+# Se proceso la variable semana a numerica para graficarla
+promedios_semana_genero$semana <- as.numeric(promedios_semana_genero$semana)
+
+# Se crea el gráfico
+ggplot(promedios_semana_genero, aes(x = semana, y = ingreso_promedio, color = factor(genero))) +
+  geom_line() +
+  labs(title = "Ingreso promedio por semana",
+       x = "Semana del Año",
+       y = "Ingreso Promedio") +
+  scale_x_continuous(breaks = seq(1,52, by = 3)) +
+  scale_color_manual(values = c("0" = "blue", "1" = "pink"),
+                     breaks = c("0","1"),
+                    labels = c("Hombre", "Mujer")) +  
+  theme_minimal()
+
+```
+
+Para analizar este gráfico, se desprende que si bien hay semanas o periodos durante el año en donde los ingresos de los comercios se disparan, como lo es de forma notoria en fin de año, la brecha de género no presenta variaciones, ambas curvas se mueven igual. En tanto, la variable semana puede ser muy buena para explicar diferencia en ingresos de forma general, pero no para explicar diferencia en los ingresos entre géneros.
+
+
+
+Se explorará el comportamiento de la variable cuarentena y como esta afecta los ingresos. En particular se analizará la situación de los años 2020 y 2021, comparando las semanas en que hubo cuarentena con las que no hubo y así ver si esta puede o no explicar la brecha de género sobre los ingresos. 
+
+```{r message=FALSE, warning=FALSE}
+#Se saca la data de los años donde hubo cuarentena
+df_2020_2021 <- df[(df$año ==2020 | df$año==2021), ]
+
+# Se crea el gráfico
+ggplot(df_2020_2021, aes(x = factor(cuarentena1), y = ingreso, fill = factor(genero))) +
+  geom_bar(stat = "summary", fun = "mean", position = "dodge") +
+  labs(title = "Ingresos promedio con/sin cuarentena 2020-2021",
+       x = "Cuarentena",
+       y = "Ingreso Promedio") +
+  scale_fill_manual(values = c("0" = "blue", "1" = "red"),
+                    breaks = c("0", "1"),
+                    labels = c("Hombre", "Mujer")) +
+  scale_y_continuous(labels = scales::comma_format(scale = 1))+
+  theme_minimal()
+```
+
+Al observar el gráfico, sorpresivamente, se observa que durante los años 2020 y 2021, en las semanas con cuarentena los ingresos promedios fueron superiores cuando hubo cuarentena en comparación a cuando no.
+
+Por otro lado, al analizar si esta variable puede influir en la brecha de género, se concluye que en realidad, parece no afectar tanto, ya que el comportamiento de ambos géneros es similar, no hay una variación ni evidencia a simple vista de que la cuarentena haya afectado los ingresos de algún género en particular.
+
+
+Finalmente, se analizará el comportamiento de la variable transacciones por hora, para observar cómo difieren entre hombres y mujeres sobre los ingresos que se generan con cada transacción.
+
+```{r message=FALSE, warning=FALSE}
+
+
+# Colapsamos la base por cada transacción y genero
+trans_hr_genero <- df %>%
+  group_by(transacciones_hr, genero) %>%
+  summarize(ingreso_prom1 = mean(logingreso))
+
+# aplicamos una transacción para visualizar mejor el grafico, tal que le asignamos a cada valor de transacción su decimal .5 mas cercano
+trans_hr_genero$transacciones_hr <- round(trans_hr_genero$transacciones_hr * 2) / 2
+
+# resumimos la nueva base colapsada actualizada con la transformación
+resumen_trans_hr <- trans_hr_genero %>%
+  group_by(transacciones_hr, genero) %>%
+  summarize(ingreso_promedio = mean(ingreso_prom1))
+
+#Se crea el gráfico
+ggplot(resumen_trans_hr, aes(x = transacciones_hr, y = ingreso_promedio, color = factor(genero))) +
+  geom_point(size = 1, alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Ingreso/hora promedio por número de transacciones por hora",
+       x = "Transacciones por Hora",
+       y = "Ingreso promedio") +
+  scale_x_continuous(breaks = seq(1,35, by = 3)) +
+  scale_color_manual(values = c("0" = "blue", "1" = "pink"),
+                     breaks = c("0", "1"),
+                     labels = c("Hombre", "Mujer")) +
+  theme_minimal()
+
+
+```
+
+En este gráfico se observa, a grandes rasgos, que a un mismo número de transacciones por hora, las mujeres generan menos ingresos en promedio que los hombres. La línea tendencial de las mujeres tiene una pendiente menor, por lo que su tasa de  n° de transacciones/ingreso promedio, se mueve menos que la de los hombres, por lo que de forma directa, una transacción promedio generada hacia un comerciante es más grande que la generada hacia una comerciante. 
+
+Esto sugiere que, evaluar la diferencia de ingreso entre ambos géneros, controlando por esta variable, puede ser significativo, ya que puede dar indicios respecto a comportamientos en el lugar de trabajo que pueden explicar por qué las mujeres realizan ventas menos cuantiosas al mismo nivel de transacción.
+
+
+En conclusión, gracias a este EDA se pudieron observar las variables que pueden jugar un rol a la hora de explicar las diferencias de ingresos semanales entre los géneros. De esta forma, se pueden formular hipótesis que ayuden a formar una historia o relato coherente con lo observado en los datos y así generar modelos con estas variables, los cuales serán analizados a lo largo del informe.
+
+#### Pregunta 2
+
+(1.0 puntos) Proponga al menos dos especificaciones alternativas para modelos de regresión lineal que permitan examinar cuantitativamente el tamaño de la brecha de género y compare sus resultados con respecto a un modelo que solo incluye el género como variable explicativo. Para cada modelo indique el signo esperado del efecto y justifique las diferencias encontradas entre los modelos.
+
+
+En estos modelos de regresión lineal, se evaluará como variable dependiente el ingreso, especificamente el logaritmo del ingreso, para interpretar los resultados en porcentaje(log-nivel).El primero de ellos, considerará solo el género como variable explicativa.
+
+```{r P2}
+m1 <- feols(log(ingreso)~ genero, data = df  )
+
+```
+
+En el segundo, además de género, se controlará por ciertas covariables vistas y justificadas durante el EDA, como lo son las horas trabajadas a la semana, los distintos rubros(vistos como las dummies creadas) y el número de transacciones por hora.
+
+```{r}
+m2 <- feols(log(ingreso)~ genero +hrs_trabajadas+r_alim + r_co  + r_ret + r_vest +transacciones_hr, data = df  )
+```
+
+En la tercera especificación, a diferencia del modelo 2, se agregan los efectos fijos que generan las zonas y la edad(vista por intervalos).
+
+```{r}
+m3 <- feols(log(ingreso)~ genero  +hrs_trabajadas+r_alim + r_co  + r_ret + r_vest+transacciones_hr  | zona+edades_intervalos, data = df  )
+
+```
+
+Se genera una tabla para observar y comparar resultados.
+
+```{r}
+#resultados
+
+myresults <- etable(m1, m2,m3, digits = "r4", digits.stats = "r4", 
+                    fitstat = c("n", "r2", "aic", "rmse"))
+
+myresults %>%
+  kbl(caption = "Regressions with Fixed Effects", align=c('l','r','r' ,'r','r')) %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+Antes de comenzar a formar un relato a lo largo de los 3 modelos, hay que considerar un par de puntos inciales. Estos resultados, indicarán como afecta cada covariable al ingreso, por lo que las métricas de ajuste y los coeficientes de cada modelo serán en relación a qué tan buenos son para explicar este fenómeno. Sin embargo, nuestro foco es interpretar, además, el efecto que tiene la variable explicatica "género", por lo que para caracterizar esta brecha sobre los ingresos, además de preocuparse de qué tan bueno es el modelo, nunca se perderá el objetivo sobre la variable de interés.
+
+El primer modelo, es el peor acercamiento para explicar variaciones de ingreso según el género. Este, simplemente indica la relación de que las mujeres (género = 1) generan un 20.74% de ingresos menos que los hombres. Este signo es el esperado ya que fue lo observado durante la exploración de datos. En cuando a qué tanto se ajusta este modelo, las métricas hablan por si solas. Posee un R2 muy bajo, entonces el género por sí solo no sirve para explicar las varianzas del ingreso.
+
+Ya en el modelo 2 se pueden apreciar cosas más interesantes. Por un lado, el efecto de controlar con más covariables hace que la brecha de género sea  del 12.82%. Esta situación era esperable ya que ahora le quitamos toda la responsibilidad a la variable género de explicar la variación de los ingresos por si sola. Por otro lado, los signos de las demás variables explicativas, también se comportan de manera esperada. En palabras simples, se tiene que el efecto de trabajar una hora más, es de un 5% de más ingreso, y el de realizar una transacción por hora más explica un 30.85% más de ingreso. En cuanto a los rubros, se tiene que los de alimentos, comida rápida y de retail son menos lucrativos que el comercio que está en nivel base en el modelo (oficios y otros servicios), mientras que el de vestuario es más lucrativo, esto es, genera mayor cantidad de ingresos.
+
+Se tiene que todas las covariables son significativas, además se aprecia una mejora notable en cuanto a las métricas de ajuste del modelo. Las variables independientes del "m2" explican un 0.6 de las variaciones del nivel de ingreso, además poseen un AIC y RMSE menor que el del modelo 1. Esto último indica que es un modelo más eficiente en la relación ajuste/complejidad y que es más preciso para ajustarse a los valores reales.
+
+Pasando al modelo 3, se agregan los efectos fijos de las variables zona y de la edad en intervalos. Lo mas notable de esta inclusión, se ve sobre el coeficiente de género, ya que señala un efecto final tal que las mujeres generan un 11% de ingresos semanales menos que los hombres. En adición a esto,se ve que este modelo no posee intercepto, ya que este está incluido en los efectos fijos. Hay un intercepto representado en cada zona y en cada intervalo de edad.
+
+En cuanto a las métricas de ajuste y los efectos de los coeficientes en el modelo 3, se nota que presentan una casi nula variación respecto al modelo 2 por lo que no vale la pena realizar un análisis más alla.
+
+Concluyendo de forma general, los modelos logran capturar la escencia de lo que se quiere estudiar en esta tarea. Permiten examinar en forma cuantitativa el tamaño de la brecha de género y luego de controlar por demás variables, permite confiar en que este valor refleja lo que sucede en los datos, y por consiguiente en la vida real.
+
+
+#### Pregunta 3
+
+(1.0 puntos) Utilice mecanismos automáticos de selección de variables para refinar los resultados de la pregunta anterior y discuta cuál de todas las especificaciones es la que mejor describe los ingresos observados. 
+
+
+Se crea una nueva dataframe, quitando variables no necesarias para los mecanismos automáticos de selección de variables, y además se crean nuevas variables correspondientes a las interacciones entre la variable de interés "genero" y las demás variables numéricas y binarias de la data.
+
+Cabe destacar que, para efectos de simplicidad de interpretación de los resultados obtenidos para el método backward y forward, se elimina la variable "zona".
+
+```{r}
+#Se quitan las variables no numericas de la base
+df2 <- subset(df, select = -ingreso)
+df2 <- subset(df2, select = -rubro )
+df2 <- subset(df2, select = -zona)
+df2 <- subset(df2, select = -semana)
+df2 <- subset(df2, select = -edades_intervalos)
+
+#Se crean de interacciones con la variable 
+df2$gxaño <- with(df2, genero * año)
+df2$gxdias_trabajados <- with(df2, genero * dias_trabajados)
+df2$gxantiguedad <- with(df2, genero * antiguedad)
+df2$gxtransacciones <- with(df2, genero * transacciones)
+df2$gxhrs_trabajadas <- with(df2, genero * hrs_trabajadas)
+df2$gxcuarentena1 <- with(df2, genero * cuarentena1)
+df2$gxhrs_diarias <- with(df2, genero * hrs_diarias)
+df2$gxtransacciones_hr <- with(df2, genero * transacciones_hr)
+df2$gxingresohrs <- with(df2, genero * ingreso_hr)
+df2$gxralim <- with(df2, genero * r_alim)
+df2$gxrco <- with(df2, genero * r_co)
+df2$gxrret <- with(df2, genero * r_ret)
+df2$gxrvest <- with(df2, genero * r_vest)
+df2$gxedad <- with(df2, genero * edad)
+```
+
+##### Aplicación de backward y forward
+```{r P3}
+#Aplicación de los modelos
+backregr <- step(lm(logingreso~., data=df2), direction="backward", trace=0)
+forwregr <- step(lm(logingreso~., data=df2), direction="forward", trace=0)
+
+#Resultados
+modelsummary(list(backwards=backregr, forward=forwregr), 
+             fmt = 2,
+             estimate  = "{estimate}{stars}({std.error})",
+             statistic = NULL, digits="r4",
+             gof_map = c("nobs", "r.squared", "adj.r.squared", "rmse"))
+```
+
+De los resultados se observa que ni las regresión backward ni forward eliminan variables.
+
+##### Aplicación de Ridge y LASSO
+
+Para facilitar el manejo de las variables a utilizar, se modifica la dataframe actual, poniendo la variable "logingreso" al final de esta.
+
+```{r}
+# Nueva data frame con la columna "logingresos" movida al final
+df3 <- df2[, c(names(df2)[names(df2) != "logingreso"], "logingreso")]
+df2 <- df3
+```
+
+Aplicando modelos Ridge y LASSO
+
+```{r message=FALSE, warning=FALSE}
+#Se definen las variables independientes "x" y la dependiente "y"
+x <- as.matrix(df2[,1:29])
+y <- as.matrix(df2[,30])
+
+#Ridge
+ridgemodel = glmnet(x, y, alpha=0, lambda=0.05)
+#LASSO
+lassomodel = glmnet(x, y, alpha=1, lambda=0.05)
+
+coef <- data.frame(ridge=coef(ridgemodel)[,1],
+                   lasso=coef(lassomodel)[,1])
+coef %>%
+  kbl(caption = "Coefficients from Ridge and LASSO regressions") %>%
+  kable_classic(full_width = F, html_font = "Trebuchet MS")
+```
+
+De los resultados se observa, en primer lugar, que LASSO elimina la variable "genero", pero a pesar de eso, no es una variable que considerará eliminar del modelo, ya que es el efecto que se quiere estudiar sobre los ingresos. Además, se observa que la mayoría de las interacciones fueron eliminadas por LASSO, a excepción de la interación de "genero" con la dummy de rubro "r_alim", sin embargo, se decide no considerar ya que no parece tan relevante si es que no se consideran las otras interacciones de los rubros. Otras variables que no se consideraron y que estaban en el modelo original son las de "cuarentena1" y "edad", ya que son eliminadas por LASSO y su coeficiente en Ridge son muy pequeños.
+
+De estos resultados se considerarán para el modelo las variables "genero", "dias_trabajados", "hrs_diarias", "transacciones_hr" y las dummies de rubro ("r_alim", "r_co", "r_ret", "r_vest").
+
+Los modelos refinados, manteniendo efectos fijos:
+
+```{r}
+#Modelo de regresión lineal sin efectos fijos
+m2_2 <- feols(logingreso~ genero + dias_trabajados + hrs_diarias + transacciones_hr + r_alim + r_co  + r_ret + r_vest, data = df)
+#Modelo de regresión lineal con efectos fijos
+m3_2 <- feols(logingreso ~ genero + dias_trabajados + hrs_diarias + transacciones_hr + r_alim + r_co  + r_ret + r_vest| zona, data = df)
+```
+
+Se genera una tabla con ambos modelos.
+
+```{r}
+#resultados
+myresults <- etable(m2_2, m3_2, digits = "r4", digits.stats = "r4", 
+                    fitstat = c("n", "r2", "aic", "rmse"))
+
+myresults %>%
+  kbl(caption = "Regressions with Fixed Effects", align=c('l','r','r')) %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+
+Al refinarse el modelo con estas nuevas consideraciones, se observa que el efecto de género en el ingreso disminuye. Esto sugiere que la variable 'género' se encontraba influida por otras variables que no se estaban teniendo en cuenta, lo que indica cierto sesgo en su interpretación. Además, se observa una notable mejora en las métricas de evaluación del modelo, con un aumento en el coeficiente R2 y una reducción en el error cuadrático medio (RMSE). Bajo estos criterios, se puede concluir que estos modelos ofrecen una explicación más sólida de los ingresos en comparación con los modelos previamente expuestos en la pregunta 2
+
+#### Pregunta 4
+
+(1.0 puntos) Proponga ahora un modelo de regresión lineal que permita explicar el efecto del género en las horas trabajadas y un modelo que permita explicar el efecto del género en los ingresos por hora. Discuta la relación de estas variables dependientes con el ingreso semanal explorado en la Pregunta 2.
+
+Se crean nuevos modelos de regresion lineal. El primero consiste en estudiar el fecto del género en las horas trabajadas, considerando además las variables de "transacciones", "cuarentena1" y las dummies de rubro "r_alim", "r_co", "r_ret", "r_vest".
+
+```{r P4}
+m4 <- feols(log(hrs_trabajadas) ~ genero + transacciones + cuarentena1 + r_alim + r_co  + r_ret + r_vest , data = df)
+```
+
+Para este siguiente modelo de regresión  se busca explicar el efecto del género en los ingresos por hora, considerando además las variables de "transacciones_hr", "hrs_trabajadas" y las dummies de rubro "r_alim", "r_co", "r_ret", "r_vest".
+
+```{r P4.1}
+m5 <- feols(log(ingreso_hr) ~ genero + transacciones_hr + hrs_trabajadas + r_alim + r_co  + r_ret + r_vest , data = df)
+```
+
+Se genera una tabla para observar los resultados de ambas regresiones.
+
+```{r P4.2}
+#Resultados
+myresults <- etable(m4, m5, digits = "r4", digits.stats = "r4", 
+                    fitstat = c("n", "r2", "aic", "rmse"))
+
+myresults %>%
+  kbl(caption = "Regressions with Fixed Effects", align=c('l','r','r' ,'r','r')) %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+Para el caso del modelo m4, se observa un efecto positivo y significativo en las horas trabajadas, es decir, las mujeres, o los negocios a nombre de mujeres se trabaja más que en el caso de los hombres. Para el modelo m5, se observa que el género tiene un efecto negativo y significativo en los ingresos por hora, es decir, que el ser un negocio registrado por una mujer afecta negativamente en promedio un 12% en los ingresos que se obtienen por hora, por lo que se podría decir que su productividad en cuanto a ingresos es menor. Sin embargo, estos modelos no tiene buenos resultados en las métricas, lo cual es esperable, ya que la variable "ingreso_hr" no tiene mucha correlación con las otras variables de la dataframe.
+
+Relacionando estos resultados con los del modelo de la pregunta 2, se puede ver que el efecto del género en ingreso e ingreso por hora son muy similares, por lo que de ambos se obtiene que, a pesar que en los negocios de mujeres se trabajan más horas, estas generan menos ingresos por semana debido a su baja productividad. Sin embargo, como se mencionó anteriormente para el modelo de ingreso por hora, este no tiene un buen R2 a comparación de los otros, lo que podría sugerir la existencia de otros factores no considerados hasta el momento.
+
+
+#### Pregunta 5
+
+(1.0 puntos) Use al menos dos de los modelos de aprendizaje de máquinas que vimos en clases (MARS, kNN, regression tree, random forest) para describir el nivel de ingresos de los comercios. Compare sus resultados con los derivados de los modelos anteriores. Además, utizando el o los modelos que les parezcan adecuados, realice un pronóstico del ingreso semanal de un vendedor para cada rubro y género.
+
+Para ésta pregunta se construirán modelos de aprendizaje de máquinas, en particular los modelos seleccionados fueron Cartt y Mars. Se parte construyendo un modelo lineal con el fin de comparar los modelos con éste, y ver su desempeño.
+
+```{r P5}
+s.train <- sample(1:nrow(df), size=round(0.8*nrow(df),0))
+
+df.train <- df[s.train,]
+df.test  <- df[-s.train,]
+```
+
+##### Modelo lineal
+Se construye el modelo lineal para luego poder medir la eficiencia de los modelos de aprendizaje de máquinas con respecto a el modelo lineal.
+
+```{r}
+train.lm <- step(lm(logingreso ~ genero + transacciones_hr + hrs_diarias + dias_trabajados + r_alim + r_co + r_ret + r_vest, data=df.train, ), direction="backward", trace = 0)
+
+modelsummary(train.lm, 
+             fmt = 2,
+             estimate  = "{estimate}{stars}({std.error})",
+             statistic = NULL,
+             gof_map = c("nobs", "adj.r.squared", "rmse"))
+```
+
+Además se irán guardando los errores para ir midiendo el desempeño y comparar la eficiencia de los modelos.
+
+```{r}
+test.lm  <- predict(train.lm, newdata=df.test)
+error.lm <- df.test$logingreso-test.lm
+```
+
+##### CART
+Por otro lado se construye el modelo Cart con las mismas variables independientes utilizadas en el modelo Lineal. Lo anterior con el fin de que al comparar el desempeño, los modelos estén entrenados con los mismos datos.
+
+```{r}
+train.cart <- train(logingreso ~ genero + transacciones_hr + hrs_diarias + dias_trabajados + r_alim + r_co + r_ret + r_vest, data=df.train, method="rpart2",  
+                   trControl = trainControl("cv", number=10),
+                   preProcess = c("center","scale"),
+                   tuneGrid = expand.grid(maxdepth=c(4,5,6,7,8))
+)
+ggplot(train.cart)
+```
+
+Éste modelo de Cart minimiza su RMSE en los 7 y 8 cortes.
+
+Nuevamente se guardan los errores para la comparación de desempeño.
+
+```{r}
+test.cart  <- predict(train.cart, newdata=df.test)
+error.cart <- df.test$logingreso-test.cart
+```
+
+
+##### MARS
+Finalmente se construye el modelo Mars, replicando las mismas variables que en el modelo Cart.
+
+```{r}
+train.mars <- train(logingreso ~ genero + transacciones_hr + hrs_diarias + dias_trabajados + r_alim + r_co + r_ret + r_vest, data=df.train, method="earth",
+                   trControl = trainControl("cv", number=10),
+                   preProcess = c("center","scale"),
+                   tuneLength = 5
+)
+ggplot(train.mars)
+```
+
+El modelo Mars minmiza su RMSE entre los 8 y 10 puntos de corte.
+
+Se guardan los errores en las variables.
+
+```{r}
+
+test.mars  <- predict(train.mars, newdata=df.test)
+error.mars <- df.test$logingreso-test.mars
+```
+
+###### KNN
+
+Por último, se construye el modelo Knn con la particularidad que además de las variables que fueron utilizadas en los modelos anteriores, también se agregó la variable Edad, dado que al no agregar dicha variable el modelo KNN no corría.
+
+```{r}
+train.knn <- train(logingreso ~ genero +edad+ transacciones_hr + hrs_diarias + dias_trabajados + r_alim + r_co + r_ret + r_vest, data=df.train, method="knn",  
+                    trControl = trainControl("cv", number=10),
+                    preProcess = c("center","scale"),
+                    tuneLength = 5
+)
+ggplot(train.knn)
+```
+
+El modelo KNN minimiza sus errores en los 13 vecinos.
+
+
+Se guardan los errores del modelo KNN.
+
+```{r}
+test.knn  <- predict(train.knn, newdata=df.test)
+error.knn <- df.test$logingreso-test.knn
+```
+
+Luego de construir los modelos, se procede a evaluar el desempeño que cada uno tiene obversando sus errores. Para realizar lo anterior se contruye un boxplot, donde visualmente se evaluarán sus desempeños.
+
+```{r}
+error.test <- data.frame(lm=error.lm, 
+                         mars=unname(error.mars), 
+                         cart=error.cart,
+                         knn=error.knn)
+
+boxplot(error.test, ylim = c(-3,3))
+title(main = "ML models", sub = "Forecasting Errors")
+
+```
+
+Como se obverva en el gráfico, los modelos que se desempeñan mejor y poseen menores errores de predicción son Mars y KNN. En particular se observa que el modelo KNN posee errores menores. Por otro lado, se evidencia que los modelos de Cart y lineal tienen los errores más grandes, siendo Cart el peor de los 4 modelos mostrando que su ajuste es bastante simple y por consiguiente no logra capturar los datos. Cabe destacar que el modelo lineal quedó suficientemente refinado como para tener errores de predicción bastante similares a los de ML, inclusive llega a superar al de Cart.
+
+Para realizar el pronóstico de ingreso semanal, se parte creando los vendedores con sus respectivos atributos. El modelo de aprendizaje de máquinas seleccionado fue el MARS dado que como se observó en la parte anterior, Mars es el modelo que posee un error inferior respecto a los otros modelos.
+En particular, para realizar el pronostico se crearon 10 vendedores con diferentes características: 5 hombres con diversas características y 5 mujeres con las mismas características que los hombres, siendo las únicas diferencias género y rubro entre ellos. Esto posibilitará un análisis más profundo sobre cómo el género y el rubro afecta los ingresos, manteniendo control sobre otras variables. Solo en los trabajadores 9 y 10 se modifica las transacciones por hora para medir como afecta un aumento en esta variable al ingreso pronosticado.
+
+```{r}
+
+#Comerciante hombre, del rubro de alimentos y abarrotes
+nuevo_vendedor1 <- data.frame(genero = 0,transacciones_hr=1,hrs_diarias = 4,dias_trabajados = 5, r_alim = 1, r_co=0,r_ret=0,r_vest= 0 )
+#Comerciante mujer, del rubro de alimentos y abarrotes
+nuevo_vendedor2 <- data.frame(genero = 1,transacciones_hr=1,hrs_diarias = 4,dias_trabajados = 5, r_alim = 1, r_co=0,r_ret=0,r_vest= 0 )
+#Comerciante hombre, del rubro de comida rapida
+nuevo_vendedor3 <- data.frame(genero = 0,transacciones_hr=1,hrs_diarias = 4,dias_trabajados = 5, r_alim = 0, r_co=1,r_ret=0,r_vest= 0 )
+#Comerciante mujer, del rubro de comida rapida
+nuevo_vendedor4 <- data.frame(genero = 1,transacciones_hr=1,hrs_diarias = 4,dias_trabajados = 5, r_alim = 0, r_co=1,r_ret=0,r_vest= 0 )
+#Comerciante hombre, del rubro de retail
+nuevo_vendedor5 <- data.frame(genero = 0,transacciones_hr=1,hrs_diarias = 4,dias_trabajados = 5, r_alim = 0, r_co=0,r_ret=1,r_vest= 0 )
+#Comerciante mujer, del rubro de retail
+nuevo_vendedor6 <- data.frame(genero = 1,transacciones_hr=1,hrs_diarias = 4,dias_trabajados = 5, r_alim = 0, r_co=0,r_ret=1,r_vest= 0 )
+#Comerciante hombre, del rubro de vestuario
+nuevo_vendedor7 <- data.frame(genero = 0,transacciones_hr=1,hrs_diarias = 4,dias_trabajados = 5, r_alim = 0, r_co=0,r_ret=0,r_vest= 1 )
+#Comerciante mujer, del rubro de vestuario
+nuevo_vendedor8 <- data.frame(genero = 1,transacciones_hr=1,hrs_diarias = 4,dias_trabajados = 5, r_alim = 0, r_co=0,r_ret=0,r_vest= 1 )
+#Comerciante hombre, del rubro de oficios y otros servicios
+nuevo_vendedor9 <- data.frame(genero = 0,transacciones_hr=2,hrs_diarias = 4,dias_trabajados = 5, r_alim = 0, r_co=0,r_ret=0,r_vest= 0 )
+#Comerciante mujer, del rubro de oficios y otros servicios
+nuevo_vendedor10 <- data.frame(genero = 1,transacciones_hr=2,hrs_diarias = 4,dias_trabajados = 5, r_alim = 0, r_co=0,r_ret=0,r_vest= 0 )
+
+pronostico_mars1 <- predict(train.mars, newdata = nuevo_vendedor1)
+pronostico_mars2 <- predict(train.mars, newdata = nuevo_vendedor2)
+pronostico_mars3 <- predict(train.mars, newdata = nuevo_vendedor3)
+pronostico_mars4 <- predict(train.mars, newdata = nuevo_vendedor4)
+pronostico_mars5 <- predict(train.mars, newdata = nuevo_vendedor5)
+pronostico_mars6 <- predict(train.mars, newdata = nuevo_vendedor6)
+pronostico_mars7 <- predict(train.mars, newdata = nuevo_vendedor7)
+pronostico_mars8 <- predict(train.mars, newdata = nuevo_vendedor8)
+pronostico_mars9 <- predict(train.mars, newdata = nuevo_vendedor9)
+pronostico_mars10 <- predict(train.mars, newdata = nuevo_vendedor10)
+
+# Crear un dataframe para presentar los pronósticos de forma ordenada.
+resultados_mars <- data.frame(
+  Vendedor = 1:10,
+  Pronostico = exp(c(
+    pronostico_mars1,
+    pronostico_mars2,
+    pronostico_mars3,
+    pronostico_mars4,
+    pronostico_mars5,
+    pronostico_mars6,
+    pronostico_mars7,
+    pronostico_mars8,
+    pronostico_mars9,
+    pronostico_mars10
+  ))
+)
+
+# Se imprime la tabla
+print(resultados_mars)
+```
+
+Al implementar modelos de Machine Learning en la base de datos con el objetivo de comprender la brecha de género en los salarios, se observa que tanto el modelo CART como el modelo MARS muestran patrones de predicción similares. Cuando se proporcionan variables a ambos modelos, se evidencia que los modelos se comportan de manera relativamente similar, aunque el modelo CART es más simple y no logra capturar completamente el efecto de ciertos parámetros, como el cambio de rubro.
+
+No obstante, el análisis resalta que la diferencia de ingresos entre géneros es una observación crucial. Incluso cuando otras variables, como las horas trabajadas y el rubro, tienen valores idénticos, el género sigue siendo un factor determinante según los modelos. Concretamente, los hombres perciben ingresos superiores a las mujeres en circunstancias similares, lo que subraya la existencia de una disparidad salarial de género.
+
+Además, se observó que al incrementar las transacciones por hora, el ingreso predicho aumenta. Esta observación es coherente con la idea preexistente del equipo, la cual sugiere que el aumento en las transacciones conlleva a un mayor ingreso percibido, y esta relación se mantiene a pesar de la diferencia de género en los ingresos.
+
+Debido a la capacidad de predicción superior del modelo MARS y su capacidad para capturar la brecha de ingresos por género, se ha optado por utilizar exclusivamente este modelo para predecir los ingresos. 
+
+Adicionalmente, el modelo confirma nuestras expectativas en relación a las horas trabajadas, ya que indica que un aumento en las horas laboradas se traduce en predicciones de mayores ingresos.
+
+## Resumen
+
+(1.0 puntos) Discuta de las ventajas de cada modelo y resuma sus aprendizajes principales en un máximo de 4 tablas o figuras. Redacte de manera concisa sus resultados tal como los reportaría a una contrparte técnica a cargo de tomar decisiones. Agregue cualquier conclusión o idea que le parezca relevante de comunicar.
+
+De forma general, a lo largo de la tarea se exploró la brecha de género sobre los ingresos semanales a partir de las ventas de pequeños negocios. Para caracterizar y describir el tamaño de esta brecha, se utilizaron diversos modelos. 
+
+Por un lado, se realizaron modelos de regresión lineal. Estos tienen la ventaja de ser muy interpretables, ya que entregan el coeficiente de cada covariable y permite concluir respecto al efecto que tiene cada una sobre el ingreso. Además, se pueden probar distintas especificaciones, como lo pueden ser interacciones entre variables, efectos fijos y transformaciones ariméticas. Con todo, se pudo apreciar de forma cuantitativa el efecto de la brecha de género en los ingresos.
+
+Por otro lado, se realizaron modelos de machine learning. En contraste a los de regresión lineal, estos modelos son mucho menos interpretables, ya que se comportan como una caja negra. Esto se ve en que no se puede apreciar los efectos de cada covariable sobre el ingreso. Como ventaja, los modelos de ML poseen un mejor ajuste a los datos y cuando se busca un enfoque de predecir, estos modelos se prefieren por sobre los de regresión lineal, dado que sus outputs están diseñados para ello.
+
+Ahora se discutirán los principales aprendizajes a partir de detallar los resultados más interesantes obtenidos.
+
+En primer lugar, a partir de la exploración de los datos, a través de un un gráfico de densidad, se pudo visualizar la diferencia en la distribución de los ingresos percibidos para ambos géneros. 
+
+```{r P6}
+# creamos media  para incluirla en la gráfica
+media_hombres <- mean(df$logingreso[df$genero == 0], na.rm = TRUE)
+media_mujeres <- mean(df$logingreso[df$genero == 1], na.rm = TRUE)
+
+#se crea la gráfica
+ggplot(df, aes(x = logingreso, fill = factor(genero))) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Densidad de distribución de los ingresos(log) por género",x = "Log(Ingresos)", y = "Densidad") +
+  scale_fill_discrete(name = "Género", labels = c("Hombre" , "Mujer" )) +
+  theme_minimal() +
+  theme(legend.position = "top") +
+  geom_vline(xintercept = media_hombres, color = "red", linetype = "dashed", size = 1) +
+  geom_vline(xintercept = media_mujeres, color = "blue", linetype = "dashed", size = 1)
+
+```
+
+Esta diferencia de ingresos fue lo  que encaminó la discusión de: ¿Por qué existe esta brecha? de modo que esta pregunta motivó la aplicación de diversas herramientas para estudiar el efecto de forma cuantitativa.
+
+Luego, se aplicaron 3 modelos de regresión lineal. Estos fueron enfocados en caracterizar el movimiento del ingreso a partir de controlar por diversas covariables, sin embargo, el foco estuvo en observar el efecto en la variable género. Este efecto fue el primer acercamiento a conocer numéricamente el tamaño de la brecha.
+
+```{r}
+myresults %>%
+  kbl(caption = "Regressions with Fixed Effects", align=c('l','r','r' ,'r','r')) %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+En la tabla, se observa el resumen de estos modelos. En ellos se aprecian distintas especificaciones, en el primero solo se regresiona el ingreso con el género, pero este no es un modelo fidedigno ya que la variable género se está llevando todo el peso de explicar las variaciones del ingreso, lo cual sesga los resultados. Al incorporar más variables en el segundo y tercer modelo, ya se puede apreciar una aproximación más real para afirmar que los comercios liderados por mujeres generan un 11% menos de ingresos semanales que los comercios liderados por hombres.
+
+Siguiendo con otras aplicaciones, se aprendió respecto a la importancia de utilizar métodos automáticos de selección de variables. En particular, se utilizaron métodos de Backward y Forward Regression, y de Ridge y LASSO. Gracias a estos, se pudo generar un modelo de regresión lineal mucho mejor en cuanto a las métricas de ajuste (R^2,RMSE).
+```{r}
+myresultsp6 <- etable(m2, m2_2, digits = "r4", digits.stats = "r4", 
+                    fitstat = c("n", "r2", "aic", "rmse"))
+
+myresultsp6 %>%
+  kbl(caption = "Comparación modelos P2-P3", align=c('l','r','r')) %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+En base a esto, se reflexiona respecto a que combinar los métodos automáticos y manuales de selección de variable llevan a mejores resultados. Por un lado, el método automático hace que las variables que no tienen impacto no sean partes de los modelos, pero con el método manual se puede corregir esto para no eliminar una variable sobre la cual se tiene interés analizar su impacto, como sucedió en esta tarea cuando LASSO sugería eliminar el género, lo cual no tiene sentido hacerlo, por qué es donde se quiere poner el foco de análisis.
+
+Luego, se utilizaron modelos de machine learning entrenados con una sección de datos, con el propósito de predecir los ingresos. Se crearon modelos de Cart. Mars y KNN, además del modelo lineal para comparar el desempeño de los 4 modelos.
+
+```{r}
+
+boxplot(error.test, ylim = c(-3,3))
+title(main = "ML models", sub = "Forecasting Errors")
+
+```
+
+Como resultado se obtuvo que los errores menores de predicción estaban asociados a los modelos de Mars y KNN, superando de esta forma a los modelos lineal y Cart al momento de capturar los efectos del aumento y disminución de ciertos parámetros sobre el ingreso.
+
+
+## Anexos
+
+Documenta acá cualquier otro adicional que consideres útil tener de referencia. 
+
+Se utilizó ChatGPT para tener el código de gráficos y para transformación de variables. 
