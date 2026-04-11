@@ -121,5 +121,5 @@ This analysis was originally developed for **IN5162 — Marketing Engineering**,
 ## 👤 Author
 
 **Jonathan Sánchez**
-- GitHub: [@Jonathan742001](https://github.com/Jonathan742001)
+- GitHub: [@jsanchez-ds](https://github.com/jsanchez-ds)
 - Universidad de Chile — Industrial Engineering
