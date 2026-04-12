@@ -14,7 +14,6 @@ encoding: UTF-8
 ---
 
 <!-- 
-Author  	  : Marcel Goic
 Description	: Brecha de Genero en Ingresos de Ventas
 Notes       : 
 -->
@@ -38,72 +37,12 @@ knitr::opts_chunk$set(
 > (large fixed-effect blocks, ML hyperparameter grids) will be noisier than on
 > the full dataset.
 
-<p align="right"><b>Curso:</b> Ingeniería de Marketing, Marcel Goic</p>
-<p align="right"><b>Equipo Docente:</b> Joaquín Cisternas, Ignacio Hernández, Andrés Olivares, Agustín Hilcker</p>
-
 # {.tabset}
 
-## Enunciado
+## Preparación del entorno
 
-Las inequidades de género se manifiestan en disitintas áreas de la economía y existe evidencia que apunta a que [el ingreso de los hombres es mayor que el de las mujeres en casi todo el mundo](https://ourworldindata.org/economic-inequality-by-gender/#in-most-countries-there-is-a-substantial-gender-pay-gap). En objetivo de esta tarea es entender si esta brecha se presenta en pequeños comercios, dónde la literatura sugiere [la participación de mujeres ha crecido significativamente en las últimas décadas](https://www.tandfonline.com/doi/full/10.1111/j.1540-627X.2007.00214.x)  
+Carga de librerías y lectura del dataset (muestra sintética de 540 filas).
 
-
-Para estudiar las brechas de género, usaremos los datos de una plataforma de pagos digitales con amplia cobertura en pequeños comercios. La plataforma registra todos los pagos digitales de una muestra de 5 mil comercios en una región en Latinoamericano que no podemos revelar. Los pagos digitales se realizan en un dispositivo de cobro que procesa la información de las tarjetas de crédito y/o débito de los clientes de los comercios y administra el pago digitalmente. Para usar el servicio, los comercios deben comprar el dispositivo que procesa los pagos el que queda registrado a cargo de un o una responsable comercial sobre quién se conoce el domicilio y el género. Como la muestra corresponde a comercios que en general tienen baja facturación, es razonable asumir que quién registra el dispositivo es quién en general opera el negocio, lo que nos posibilita estudiar brechas de ingreso. 
-
-La base de datos que hemos recopilado para estudiar las brechas de género contiene una caracterización del comercio, y variables de actividad econoómica semanal como ingresos, numero de transacciones y horas trabajadas: 
-
-* **idm**: Número del vendedor(a)
-* **zona**: String con id de la zona. 
-* **semana**: Corresponde a la semana del año del registro.
-* **Año**: Corresponde al año del registro.
-* **semana_Año**: String que une las columnas semana y año (formato: semana-Año)
-* **edad**: Edad del vendedor(a).
-* **genero**: Toma el valor 1 si es mujer y 0 si es hombre.
-* **ingreso**: Ingresos percibidos por el vendedor(a) i en la semana w del año y.
-* **dias_trabajados**: Días trabajados por el vendedor(a) i en la semana w del año y.
-* **antiguedad**: Antigüedad (en años) del vendedor i utilizando SumUp.
-* **rubro**: Rubro del negocio del vendedor i.
-* **transacciones**: Cantidad de transacciones que hizo el vendedor(a) i en la semana w del año y.
-* **hrs_trabajados**: Horas trabajadas por el vendedor(a) i en la semana w del año y.
-* **cuarentena1**: 1 si hubo cuarentena algún dia activo del vendedor(a) i en la semana w del año y, 0 si no.
-* **hrs_diarias**: Horas diarias promedio trabajadas en los días que el vendedor(a) i trabajó en la semana w del año y.
-* **transacciones_hr**: Promedio de transacciones por hora realizadas por el vendedor(a) i en la semana w del año y.
-* **ingreso_hr**: Ingresos por hora promedio percibidos por el vendedor(a) i en la semana w del año y.
-
-A partir surgen una serie de preguntas de investigación interesantes. ¿Existe una brecha de ingresos para este segmento de comerciantes? De existir, ¿cuál es su magnitud y qué tanta dispersión existe? ¿Es homogénea entre rubros y zonas? ¿Qué podría explicar esta potente diferencia en los ingresos? 
-
-#### **Reglas del juego** 
-
-* Las tareas buscan replicar parcialmente las labores a las que se enfrentarían en el análisis de datos para el apoyo en la toma de decisiones, ya sea para una organización o para la definición de políticas. Por esto, se han propuesto preguntas relativamente abiertas que requieren que ustedes discutan y decidan cuál es el mejor enfoque de solución. Les pedimos que se involucren tempranamente en el desarrollo de la tarea para tener una discusión enriquecedora.
-
-* Todas las dudas, comentarios y errores publicarlos **exclusivamente** en el foro de u-cursos. De esta forma todos se benefician de las respuestas ofrecidas.
-
-* Consideramos que es muy importante que logren escribir un informe conciso con una redacción acorde de un informe técnico profesional. La presentación y comunicación de resultados es parte integral de la tarea y, por tanto, será evaluada cuidadosamente.
-
-* La tarea se desarrolla en grupos de máximo 3 integrantes. El entregable principal es un único markdown separado en tabs (a través de la opción .tabset). En un primer tab incluya todo el desarrollo de la tarea adecuadamente comentado. El segundo tab incluya el resumen de sus resultados de acuerdo a lo pedido en la pregunta 6. Este segundo tab es el que usarán en caso de que les corresponda presentar sus resultados. Considere también un tab con todos los procedimientos preliminares y otro para los anexos dónde puede incluir cualquier resultado complementario. 
-
-* Para entregar sus resultados suba, vía u-cursos, un único archivo comprimido llamado t1-A1-A2-A3.zip, donde A1, A2 y A3 es el primer apellido de los integrantes del grupo. Incluya también los nombres de los integrantes en el documento mismo. Incluya en el zip tanto el archivo .html de salida del markdown como los códigos fuentes que permitan reproducir sus resultados.
-
-* Para la pregunta final consideramos que 4 figuras son suficientes para resumir los aprendizajes más relevantes, pero si están convencidos de que agregar una figura adicional es absolutamente necesaria, ¡Adelante!
-
-* La fecha de entrega de la tarea es el jueves 7 de septiembre a las 23:59, sin excepciones y no habrá plazo extra para la entrega. Si por algún motivo de fuerza mayor se ve imposibilitado de entregar la tarea en el plazo estipulado, deberá escribir directamente al profesor explicando su situación. El profesor decidirá el curso de acción de acuerdo a los méritos del caso. Como siempre, es mejor dar cuenta de cualquier problema con la mayor anticipación posible. 
-
-* Recuerde que tenemos dos instancias de retroalimentación asociadas a la tarea:
-
-  1. La sesión, a realizarse el día <span style="color: navy">viernes 1 de septiembre</span>, está destinada para que expongan sus avances y dificultades y podamos discutir colectivamente cuáles son causes de acción razonables para resolver los problemas. A esta fecha se espera que los grupos al menos hayan explorado los datos y estimado algunos modelos preliminares. 
-  2. La sesión, a realizarse el día <span style="color: navy">viernes 8 de septiembre</span>, está destinada a que expongan los resultados más relevantes de su trabajo y resuman sus principales aprendizajes. Esta instancia busca simular una presentación final contra una contraparte interesada, como a las que se enfrentarán frecuentemente en su vida profesional. 
-  
-Aunque me gustaría que todos pudieran presentar, no tenemos tiempo para aquello por lo solo  seleccionaremos a aquellos que encuentren valor en esta instacia de aprendizaje. Las presentaciones tendrán una duración aproximada de 10 minutos y no es necesario que preparen material adicional. La salida del markdown debe ser lo suficientemente explicativa para comunicar sus resultados. 
-
-- A raíz de la opinión de los estudiantes, vamos a implementar una co-evaluación para que los estudiantes puedan valorar la participación de los compañeros y compañeras de grupo. Para calcular la nota final del alumno $j$ ponderaremos la nota grupal por $\max \left\{ \frac{J \cdot prom_j}{\sum_{k=1}^J prom_k} , 0.75 \right\}$, donde $prom_k$ corresponde al promedio de las co-evaluaciones recibidas por el estudiante $k$ dentro del grupo de $J$ integrantes.  
-
-- El equipo docente considera que la copia de tareas atenta en contra de tu aprendizaje y por tanto aplicará todas las medidas que estén a su disposición para desincentivar esta mala práctica.
-
-## Preliminares
-
-Escriba acá todos los comandos que necesita ejecutar antes de abordar las preguntas de la tarea (carga de librerías, lectura de datos, limpieza de la data, transformación de variables y todo lo que necesite).
-
-#### Preparación Tarea
 
 Preliminares
 
@@ -182,13 +121,11 @@ df <- subset(df, select = -r_ofi)
 ```
 
 
-## Desarrollo
+## Análisis
 
-Documente acá el desarrollo de su tarea por pregunta.
+### 1. Análisis Exploratorio
 
-#### Pregunta 1
-
-(1.0 puntos) Explore los datos para entender como se comportan los ingresos de acuerdo al género del comerciante y liste al menos 3 variables que podrían influir en la brecha de ingresos. Justifique la elección de estas variables en base a los resultados del ejericio de exploración de datos.
+Exploramos cómo se comportan los ingresos de los comerciantes según género e identificamos las variables observables que más plausiblemente median la brecha (horas trabajadas, rubro, zona, edad).
 
 ##### EDA
 Se explorará la data con el objetivo y foco en presentar cómo se comportan las variables que serán de utilidad para explicar cómo varía el ingreso entre los y las comerciantes.
@@ -503,9 +440,9 @@ Esto sugiere que, evaluar la diferencia de ingreso entre ambos géneros, control
 
 En conclusión, gracias a este EDA se pudieron observar las variables que pueden jugar un rol a la hora de explicar las diferencias de ingresos semanales entre los géneros. De esta forma, se pueden formular hipótesis que ayuden a formar una historia o relato coherente con lo observado en los datos y así generar modelos con estas variables, los cuales serán analizados a lo largo del informe.
 
-#### Pregunta 2
+### 2. Regresiones Lineales con Controles Crecientes
 
-(1.0 puntos) Proponga al menos dos especificaciones alternativas para modelos de regresión lineal que permitan examinar cuantitativamente el tamaño de la brecha de género y compare sus resultados con respecto a un modelo que solo incluye el género como variable explicativo. Para cada modelo indique el signo esperado del efecto y justifique las diferencias encontradas entre los modelos.
+Estimamos varias especificaciones de regresión lineal sobre el log-ingreso semanal — desde una versión cruda con sólo el género hasta modelos con horas trabajadas, transacciones por hora, rubro y efectos fijos de zona y edad — para cuantificar cuánto de la brecha es absorbida por cada bloque de controles.
 
 
 En estos modelos de regresión lineal, se evaluará como variable dependiente el ingreso, especificamente el logaritmo del ingreso, para interpretar los resultados en porcentaje(log-nivel).El primero de ellos, considerará solo el género como variable explicativa.
@@ -556,9 +493,9 @@ En cuanto a las métricas de ajuste y los efectos de los coeficientes en el mode
 Concluyendo de forma general, los modelos logran capturar la escencia de lo que se quiere estudiar en esta tarea. Permiten examinar en forma cuantitativa el tamaño de la brecha de género y luego de controlar por demás variables, permite confiar en que este valor refleja lo que sucede en los datos, y por consiguiente en la vida real.
 
 
-#### Pregunta 3
+### 3. Selección Automática de Variables
 
-(1.0 puntos) Utilice mecanismos automáticos de selección de variables para refinar los resultados de la pregunta anterior y discuta cuál de todas las especificaciones es la que mejor describe los ingresos observados. 
+Para depurar la especificación anterior aplicamos mecanismos automáticos de selección (stepwise backward/forward) y modelos regularizados (Ridge y LASSO via glmnet), comparando R² ajustado, RMSE y AIC.
 
 
 Se crea una nueva dataframe, quitando variables no necesarias para los mecanismos automáticos de selección de variables, y además se crean nuevas variables correspondientes a las interacciones entre la variable de interés "genero" y las demás variables numéricas y binarias de la data.
@@ -663,9 +600,9 @@ myresults %>%
 
 Al refinarse el modelo con estas nuevas consideraciones, se observa que el efecto de género en el ingreso disminuye. Esto sugiere que la variable 'género' se encontraba influida por otras variables que no se estaban teniendo en cuenta, lo que indica cierto sesgo en su interpretación. Además, se observa una notable mejora en las métricas de evaluación del modelo, con un aumento en el coeficiente R2 y una reducción en el error cuadrático medio (RMSE). Bajo estos criterios, se puede concluir que estos modelos ofrecen una explicación más sólida de los ingresos en comparación con los modelos previamente expuestos en la pregunta 2
 
-#### Pregunta 4
+### 4. Descomposición de la Brecha en Canales
 
-(1.0 puntos) Proponga ahora un modelo de regresión lineal que permita explicar el efecto del género en las horas trabajadas y un modelo que permita explicar el efecto del género en los ingresos por hora. Discuta la relación de estas variables dependientes con el ingreso semanal explorado en la Pregunta 2.
+La brecha total puede provenir de trabajar menos horas, de un menor ingreso por hora, o de ambos. Reestimamos los mismos controles usando como dependiente el log de horas trabajadas y luego el log del ingreso por hora para aislar cada canal.
 
 Se crean nuevos modelos de regresion lineal. El primero consiste en estudiar el fecto del género en las horas trabajadas, considerando además las variables de "transacciones", "cuarentena1" y las dummies de rubro "r_alim", "r_co", "r_ret", "r_vest".
 
@@ -696,9 +633,9 @@ Para el caso del modelo m4, se observa un efecto positivo y significativo en las
 Relacionando estos resultados con los del modelo de la pregunta 2, se puede ver que el efecto del género en ingreso e ingreso por hora son muy similares, por lo que de ambos se obtiene que, a pesar que en los negocios de mujeres se trabajan más horas, estas generan menos ingresos por semana debido a su baja productividad. Sin embargo, como se mencionó anteriormente para el modelo de ingreso por hora, este no tiene un buen R2 a comparación de los otros, lo que podría sugerir la existencia de otros factores no considerados hasta el momento.
 
 
-#### Pregunta 5
+### 5. Comparación con Modelos de Machine Learning
 
-(1.0 puntos) Use al menos dos de los modelos de aprendizaje de máquinas que vimos en clases (MARS, kNN, regression tree, random forest) para describir el nivel de ingresos de los comercios. Compare sus resultados con los derivados de los modelos anteriores. Además, utizando el o los modelos que les parezcan adecuados, realice un pronóstico del ingreso semanal de un vendedor para cada rubro y género.
+Finalmente comparamos varios modelos predictivos (CART, MARS, KNN, Random Forest) sobre la misma división train/test para contrastar su capacidad predictiva contra los modelos lineales y observar si capturan no-linealidades relevantes.
 
 Para ésta pregunta se construirán modelos de aprendizaje de máquinas, en particular los modelos seleccionados fueron Cartt y Mars. Se parte construyendo un modelo lineal con el fin de comparar los modelos con éste, y ver su desempeño.
 
@@ -879,9 +816,9 @@ Debido a la capacidad de predicción superior del modelo MARS y su capacidad par
 
 Adicionalmente, el modelo confirma nuestras expectativas en relación a las horas trabajadas, ya que indica que un aumento en las horas laboradas se traduce en predicciones de mayores ingresos.
 
-## Resumen
+## Conclusiones
 
-(1.0 puntos) Discuta de las ventajas de cada modelo y resuma sus aprendizajes principales en un máximo de 4 tablas o figuras. Redacte de manera concisa sus resultados tal como los reportaría a una contrparte técnica a cargo de tomar decisiones. Agregue cualquier conclusión o idea que le parezca relevante de comunicar.
+Síntesis de los principales hallazgos del análisis.
 
 De forma general, a lo largo de la tarea se exploró la brecha de género sobre los ingresos semanales a partir de las ventas de pequeños negocios. Para caracterizar y describir el tamaño de esta brecha, se utilizaron diversos modelos. 
 
@@ -944,10 +881,3 @@ title(main = "ML models", sub = "Forecasting Errors")
 ```
 
 Como resultado se obtuvo que los errores menores de predicción estaban asociados a los modelos de Mars y KNN, superando de esta forma a los modelos lineal y Cart al momento de capturar los efectos del aumento y disminución de ciertos parámetros sobre el ingreso.
-
-
-## Anexos
-
-Documenta acá cualquier otro adicional que consideres útil tener de referencia. 
-
-Se utilizó ChatGPT para tener el código de gráficos y para transformación de variables. 
