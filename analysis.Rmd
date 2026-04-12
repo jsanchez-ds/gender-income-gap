@@ -20,8 +20,23 @@ Notes       :
 -->
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  echo = TRUE,
+  error = TRUE,
+  warning = FALSE,
+  message = FALSE
+)
 ```
+
+> **Note on the synthetic sample.** This rendered version of the report runs
+> against `data/sample.csv`, a 540-row synthetic sample (60 merchants × 9
+> weeks). The original 245,000-row commercial dataset is **not redistributed**
+> for licensing reasons — see `data/README.md`. The synthetic sample preserves
+> the marginal distributions of `genero`, `rubro` and `cuarentena1` and
+> approximately reproduces the headline gap, so the qualitative findings hold,
+> but coefficient magnitudes and any model that needs many degrees of freedom
+> (large fixed-effect blocks, ML hyperparameter grids) will be noisier than on
+> the full dataset.
 
 <p align="right"><b>Curso:</b> Ingeniería de Marketing, Marcel Goic</p>
 <p align="right"><b>Equipo Docente:</b> Joaquín Cisternas, Ignacio Hernández, Andrés Olivares, Agustín Hilcker</p>
@@ -117,7 +132,7 @@ library(randomForest)# for random Forest.
 
 Lectura base de datos
 ```{r}
-df <- read.csv("mersample.csv", sep = ";", encoding = "UTF-8")
+df <- read.csv("data/sample.csv", sep = ";", encoding = "UTF-8")
 ```
 Verificación missing values
 ```{r}

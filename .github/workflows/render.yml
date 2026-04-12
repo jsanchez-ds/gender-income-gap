@@ -1,0 +1,87 @@
+name: Render Rmd to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'analysis.Rmd'
+      - 'data/**'
+      - '.github/workflows/render.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.3'
+          use-public-rspm: true
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libcurl4-openssl-dev libssl-dev libxml2-dev \
+            libfontconfig1-dev libfreetype6-dev libharfbuzz-dev libfribidi-dev \
+            libpng-dev libtiff5-dev libjpeg-dev
+
+      - name: Cache R packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.R_LIBS_USER }}
+          key: r-${{ runner.os }}-${{ hashFiles('.github/workflows/render.yml') }}
+          restore-keys: r-${{ runner.os }}-
+
+      - name: Install R packages (binaries from RSPM)
+        run: |
+          options(repos = c(RSPM = "https://packagemanager.posit.co/cran/__linux__/jammy/latest"))
+          pkgs <- c(
+            "rmarkdown", "knitr", "tidyverse", "dplyr", "readr", "ggplot2",
+            "ggcorrplot", "fixest", "glmnet", "caret", "earth", "rpart",
+            "randomForest", "kableExtra", "modelsummary"
+          )
+          to_install <- pkgs[!pkgs %in% rownames(installed.packages())]
+          if (length(to_install) > 0) install.packages(to_install)
+        shell: Rscript {0}
+
+      - name: Render Rmd
+        run: |
+          dir.create("docs", showWarnings = FALSE)
+          rmarkdown::render(
+            "analysis.Rmd",
+            output_format = "html_document",
+            output_file = "index.html",
+            output_dir = "docs",
+            quiet = FALSE
+          )
+          file.create("docs/.nojekyll")
+        shell: Rscript {0}
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: render
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
