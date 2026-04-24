@@ -1,3 +1,5 @@
+🌐 **English** · [Español](README.es.md)
+
 # Gender Income Gap in Small Commerce
 
 Quantifying the gender income gap among small merchants in Latin America using transactional data from a digital payments platform. The analysis combines **descriptive exploration**, **fixed-effects regression**, **regularized linear models**, and **machine learning** (CART, MARS, KNN, Random Forest) to measure the gap and identify which observable factors explain it.
